@@ -1,2 +1,2 @@
 # vmware_tool
-A tool to manipulate VMWare resources
+A tool to manipulate VMware resources
