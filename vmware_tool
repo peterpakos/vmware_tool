@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# VMware Tool
+# A tool to manipulate VMware resources
 #
 # Author: Peter Pakos <peter.pakos@wandisco.com>
 
@@ -34,7 +34,7 @@ class Main(object):
         self._server = VMware(self._args.vc_host, self._args.vc_user, vc_pass)
 
     def _parse_args(self):
-        parser = argparse.ArgumentParser(description='VMware Tool')
+        parser = argparse.ArgumentParser(description='A tool to manipulate VMware resources')
         parser.add_argument('-v', '--version', action='version', version='%s %s' % (self._name, self._version))
         parser.add_argument('-H', '--host', help='VMware hostname', dest='vc_host', required=True)
         parser.add_argument('-u', '--user', help='VMware username', dest='vc_user', required=True)
