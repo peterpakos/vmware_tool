@@ -1,0 +1,111 @@
+#!/usr/bin/env python
+#
+# VMware Tool
+#
+# Author: Peter Pakos <peter.pakos@wandisco.com>
+
+from __future__ import print_function
+
+import argparse
+import os
+import sys
+import pysphere
+import ssl
+import socket
+import logging
+import getpass
+
+
+class Main(object):
+    _version = '16.10.7'
+    _name = os.path.basename(sys.argv[0])
+
+    def __init__(self):
+        self._args = self._parse_args()
+        if self._args.debug:
+            streamhandler.setLevel(logging.DEBUG)
+        log.debug('Main init')
+        log.debug(self._args)
+        if self._args.vc_pass:
+            vc_pass = self._args.vc_pass
+        else:
+            vc_pass = getpass.getpass(prompt='Enter password for user %s: ' % self._args.vc_user)
+        log.debug('Password: %s' % vc_pass)
+        self._server = VMware(self._args.vc_host, self._args.vc_user, vc_pass)
+
+    def _parse_args(self):
+        parser = argparse.ArgumentParser(description='VMware Tool')
+        parser.add_argument('-v', '--version', action='version', version='%s %s' % (self._name, self._version))
+        parser.add_argument('-H', '--host', help='VMware hostname', dest='vc_host', required=True)
+        parser.add_argument('-u', '--user', help='VMware username', dest='vc_user', required=True)
+        parser.add_argument('-p', '--pass', help='VMware password', dest='vc_pass')
+        parser.add_argument('-d', '--debug', help='debug mode', dest='debug', action='store_true')
+        subparsers = parser.add_subparsers(title='commands', dest='command')
+        subparsers.add_parser('list_vms', help='list VMs')
+        parser_list_ss = subparsers.add_parser('list_ss', help='list snapshots')
+        parser_list_ss.add_argument('-m', '--vm', help='VM name', required=True)
+        return parser.parse_args()
+
+    def run(self):
+        log.debug('run')
+        if self._args.command == 'list_ss':
+            self.list_ss()
+        elif self._args.command == 'list_vms':
+            self.list_vms()
+        else:
+            print('Unknown command %s' % self._args.command)
+            exit(1)
+
+    def list_vms(self):
+        for ss in self._server.get_vms():
+            print(ss)
+
+    def list_ss(self):
+        for ss in self._server.get_vms():
+            print(ss)
+
+
+class VMware(object):
+    def __init__(self, vc_host, vc_user, vc_pass):
+        log.debug('VMware init')
+        self._server = pysphere.VIServer()
+        ssl._create_default_https_context = ssl._create_unverified_context
+        try:
+            self._server.connect(vc_host, vc_user, vc_pass)
+        except socket.gaierror as e:
+            log.error(e)
+            print(e)
+            exit(1)
+        except TypeError as e:
+            log.error(e)
+            print(e)
+            exit(1)
+        except pysphere.VIApiException as e:
+            log.error(e)
+            print(e)
+            exit(1)
+
+    def __del__(self):
+        self._server.disconnect()
+        log.debug('VMware del')
+
+    def get_vms(self):
+        return self._server.get_registered_vms()
+
+
+if __name__ == '__main__':
+    log = logging.getLogger(__name__)
+    log.setLevel(logging.DEBUG)
+    formatter = logging.Formatter("%(asctime)-20s%(name)-10s%(levelname)-10s%(message)s",
+                                  datefmt='%Y-%m-%d %H:%M:%S')
+
+    streamhandler = logging.StreamHandler()
+    streamhandler.setLevel(logging.CRITICAL)
+    streamhandler.setFormatter(formatter)
+    log.addHandler(streamhandler)
+
+    try:
+        main = Main()
+        main.run()
+    except KeyboardInterrupt:
+        print('\nCancelling...')
